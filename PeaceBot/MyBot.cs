@@ -11,6 +11,7 @@ namespace PeaceBot
 {
     class MyBot
     {
+//TEST
         private readonly DiscordClient _discord;
         private readonly CommandService _commands;
         private Random rand;
