@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Discord;
 using Discord.Commands;
+using Discord.Modules;
 
 namespace PeaceBot
 {
@@ -11,16 +13,16 @@ namespace PeaceBot
     {
         private readonly DiscordClient _discord;
         private readonly CommandService _commands;
-
         private Random rand;
-
-        private const string sessionIDPath = "Memory/SessionID.txt";
+        private int lastNumber;
+        public static bool OnceBool { get; set; }
+        public static bool TurnOff { get; set; }
         private readonly string[] _freshestMemes;
 
         public MyBot()
         {
             rand = new Random();
-            
+
             _freshestMemes = new[]
             {
                 "http://i.imgur.com/qmvnneb.png",
@@ -30,13 +32,20 @@ namespace PeaceBot
                 "http://i.imgur.com/rpUlDw2.jpg",
                 "http://i.imgur.com/JAbJNU8.jpg",
                 "http://i.imgur.com/STHLxsq.jpg",
-                "http://i.imgur.com/kAgqBPQ.jpg"
+                "http://i.imgur.com/kAgqBPQ.jpg",
+                "https://i.redd.it/ue6uztfw36ly.jpg",
+                "https://i.redd.it/vlufm6a768ly.jpg",
+                "https://i.imgur.com/cej88C3.jpg",
+                "http://i.imgur.com/s4EA4tD.jpg",
+                "https://i.imgur.com/Hozfqi5.jpg",
+                "https://i.redd.it/uf3nt10u43ly.jpg",
+                "https://i.imgur.com/qVPf2sv.jpg"
 
             };
 
             _discord = new DiscordClient(x =>
             {
-                x.LogLevel = LogSeverity.Debug;
+                x.LogLevel = LogSeverity.Info;
                 x.LogHandler = Log;
             });
 
@@ -53,20 +62,20 @@ namespace PeaceBot
 
             _discord.ExecuteAndWait(async () =>
             {
-                
+                Log("Connecting to Discord API...");
                 try
                 {
                     await _discord.Connect("MjkwODAzOTI0NTM2MDAwNTEy.C6hk0Q.wcG1X7t8ZzbF0pKzC4tCYZSYcRE", TokenType.Bot);
                 }
                 catch (Exception ex)
                 {
+                    Log("Could not connect to Discord API.\n:Error Message: " + ex.Message);
                     Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
                 }
+                Log("Bot connected to Discord.");
             });
-            
-            var sesID = _discord.SessionId;
-            var cancelToken =_discord.CancelToken;
-            lineChanger(sesID, 1);
+
+
         }
 
 
@@ -74,8 +83,9 @@ namespace PeaceBot
         {
             RegisterMemeCommand();
             RegisterPurgeCommand();
-            RegisterTestCommand();
+            RegisterTrashCommand();
             RegisterPeaceCommandsCommand();
+            RegisterShutDownCommand();
         }
 
         private void RegisterPeaceCommandsCommand()
@@ -83,9 +93,41 @@ namespace PeaceBot
             _commands.CreateCommand("peacecommands")
     .Do(async (e) =>
     {
-        await e.Channel.SendMessage("!peacecommands - Get commands.\n!purge param - Delete 'param' amount of messages. Default = 5\n!meme - Posts a meme.");
-
+        Log(e.User.Name + " on " + e.Server.Name + " requested commands.");
+        string commString = "";
+        commString += "!peacecommands - Get commands.\n!meme - Posts a meme.";
+        if (e.User.Name == "peacedude")
+        {
+            commString += "\n!quit - Turn off bot";
+        }
+        if (e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault()))
+        {
+            commString += "\n!purge param - Delete 'param' amount of messages. Default = 5";
+        }
+        await e.User.SendMessage(commString);
     });
+        }
+
+        private void RegisterShutDownCommand()
+        {
+            _commands.CreateCommand("quit")
+                .Do(async (e) =>
+                {
+                    if (e.User.Name == "peacedude")
+                    {
+                        Console.WriteLine(e.User.Name + " turned me off.");
+                        TurnOff = true;
+                        Log(e.User.Name + " turned me off.");
+                        await e.Channel.SendMessage("Bye!");
+                        Thread.Sleep(1000);
+                        await _discord.Disconnect();
+                    }
+                    else
+                    {
+                        Console.WriteLine(e.User.Name + " tried to turn me off.");
+                        await e.Channel.SendMessage(e.User.Name + " don't touch me there <:gachiGASM:231525548390744064>");
+                    }
+                });
         }
 
         private void RegisterPurgeCommand()
@@ -103,6 +145,8 @@ namespace PeaceBot
                             var messagesToDelete = await e.Channel.DownloadMessages(amnt);
                             await e.Channel.DeleteMessages(messagesToDelete);
                             await e.Channel.SendMessage(amnt + " messages deleted.");
+                            Log(e.User.Name + " on " + e.Server.Name + " purged " + amnt + " messages.");
+                            Console.WriteLine(e.User.Name + " on " + e.Server.Name + " purged " + amnt + " messages.");
                         }
                         else if (amnt > 100)
                         {
@@ -122,22 +166,27 @@ namespace PeaceBot
             _commands.CreateCommand("meme")
                 .Do(async (e) =>
                 {
+
                     var randomMemeIndex = rand.Next(_freshestMemes.Length);
+                    while (randomMemeIndex == lastNumber)
+                    {
+                        randomMemeIndex = rand.Next(_freshestMemes.Length);
+                    }
                     var memeToPost = _freshestMemes[randomMemeIndex];
                     await e.Channel.SendMessage(memeToPost);
-                    // Old Meme Command. Reads from file.
-                    //var randomMemeIndex = rand.Next(_freshestMemes.Length);
-                    //var memeToPost = _freshestMemes[randomMemeIndex];
-                    //await e.Channel.SendFile(memeToPost);
+                    lastNumber = randomMemeIndex;
+                    Log(e.User.Name + " on " + e.Server.Name + " requested a meme and got " + memeToPost);
+                    Console.WriteLine(e.User.Name + " on " + e.Server.Name + " requested a meme and got " + memeToPost);
                 });
         }
 
-        private void RegisterTestCommand()
+        private void RegisterTrashCommand()
         {
-            _commands.CreateCommand("test")
+            _commands.CreateCommand("trash")
                 .Do(async (e) =>
                 {
-                    await e.Channel.SendMessage("https://i.imgur.com/Obg1wqc.jpg");
+                    var userRole = e.Server.FindRoles("OG").FirstOrDefault();
+                    await e.User.AddRoles(userRole);
                 });
         }
 
@@ -147,12 +196,27 @@ namespace PeaceBot
             Console.WriteLine(e.Message);
         }
 
-        static void lineChanger(string newText, int line_to_edit)
+        public static void Log(string logMessage)
         {
-            string[] arrLine = File.ReadAllLines(sessionIDPath);
-            arrLine[line_to_edit - 1] = newText;
-            File.WriteAllLines(sessionIDPath, arrLine);
+            using (StreamWriter w =
+            new StreamWriter("Memory/log.txt", true))
+            {
+
+                if (OnceBool == false)
+                {
+                    w.WriteLine("-------------------|Starting bot|-----------------------");
+                    OnceBool = true;
+                }
+                w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(),
+                    DateTime.Now.ToLongDateString(), logMessage);
+                if (TurnOff)
+                {
+                    w.WriteLine("-------------------|Stopping bot|-----------------------\n");
+                }
+            }
         }
+
+        
     }
 
 }
