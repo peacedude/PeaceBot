@@ -1,21 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using Discord;
 using Discord.Commands;
-using Discord.Modules;
 
 namespace PeaceBot
 {
     class MyBot
     {
-//TEST
-        private readonly DiscordClient _discord;
-        private readonly CommandService _commands;
+        public readonly DiscordClient Discord;
+        public readonly CommandService Commands;
         private Random rand;
-        private int lastNumber;
+        private int _lastNumber;
         public static bool OnceBool { get; set; }
         public static bool TurnOff { get; set; }
         private readonly string[] _freshestMemes;
@@ -44,29 +41,29 @@ namespace PeaceBot
 
             };
 
-            _discord = new DiscordClient(x =>
+            Discord = new DiscordClient(x =>
             {
                 x.LogLevel = LogSeverity.Info;
                 x.LogHandler = Log;
             });
 
-            _discord.UsingCommands(x =>
+            Discord.UsingCommands(x =>
             {
                 x.PrefixChar = '!';
                 x.AllowMentionPrefix = true;
             });
 
 
-            _commands = _discord.GetService<CommandService>();
+            Commands = Discord.GetService<CommandService>();
 
             RegisterCommands();
 
-            _discord.ExecuteAndWait(async () =>
+            Discord.ExecuteAndWait(async () =>
             {
                 Log("Connecting to Discord API...");
                 try
                 {
-                    await _discord.Connect("MjkwODAzOTI0NTM2MDAwNTEy.C6hk0Q.wcG1X7t8ZzbF0pKzC4tCYZSYcRE", TokenType.Bot);
+                    await Discord.Connect("MjkwODAzOTI0NTM2MDAwNTEy.C6hk0Q.wcG1X7t8ZzbF0pKzC4tCYZSYcRE", TokenType.Bot);
                 }
                 catch (Exception ex)
                 {
@@ -91,7 +88,7 @@ namespace PeaceBot
 
         private void RegisterPeaceCommandsCommand()
         {
-            _commands.CreateCommand("peacecommands")
+            Commands.CreateCommand("peacecommands")
     .Do(async (e) =>
     {
         Log(e.User.Name + " on " + e.Server.Name + " requested commands.");
@@ -111,7 +108,7 @@ namespace PeaceBot
 
         private void RegisterShutDownCommand()
         {
-            _commands.CreateCommand("quit")
+            Commands.CreateCommand("quit")
                 .Do(async (e) =>
                 {
                     if (e.User.Name == "peacedude")
@@ -121,7 +118,7 @@ namespace PeaceBot
                         Log(e.User.Name + " turned me off.");
                         await e.Channel.SendMessage("Bye!");
                         Thread.Sleep(1000);
-                        await _discord.Disconnect();
+                        await Discord.Disconnect();
                     }
                     else
                     {
@@ -133,7 +130,7 @@ namespace PeaceBot
 
         private void RegisterPurgeCommand()
         {
-            _commands.CreateCommand("purge")
+            Commands.CreateCommand("purge")
                 .Parameter("purgeAmount", ParameterType.Optional)
                 .Do(async (e) =>
                 {
@@ -164,18 +161,18 @@ namespace PeaceBot
 
         private void RegisterMemeCommand()
         {
-            _commands.CreateCommand("meme")
+            Commands.CreateCommand("meme")
                 .Do(async (e) =>
                 {
 
                     var randomMemeIndex = rand.Next(_freshestMemes.Length);
-                    while (randomMemeIndex == lastNumber)
+                    while (randomMemeIndex == _lastNumber)
                     {
                         randomMemeIndex = rand.Next(_freshestMemes.Length);
                     }
                     var memeToPost = _freshestMemes[randomMemeIndex];
                     await e.Channel.SendMessage(memeToPost);
-                    lastNumber = randomMemeIndex;
+                    _lastNumber = randomMemeIndex;
                     Log(e.User.Name + " on " + e.Server.Name + " requested a meme and got " + memeToPost);
                     Console.WriteLine(e.User.Name + " on " + e.Server.Name + " requested a meme and got " + memeToPost);
                 });
@@ -183,7 +180,7 @@ namespace PeaceBot
 
         private void RegisterTrashCommand()
         {
-            _commands.CreateCommand("trash")
+            Commands.CreateCommand("trash")
                 .Do(async (e) =>
                 {
                     var userRole = e.Server.FindRoles("OG").FirstOrDefault();
