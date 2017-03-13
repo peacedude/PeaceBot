@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Discord;
 using Discord.Commands;
@@ -13,18 +14,23 @@ namespace PeaceBot
 
         private Random rand;
 
-
+        private const string sessionIDPath = "Memory/SessionID.txt";
         private readonly string[] _freshestMemes;
 
         public MyBot()
         {
             rand = new Random();
-
+            
             _freshestMemes = new[]
             {
-                "meme/meme1.jpg",
-                "meme/meme2.jpg",
-                "meme/meme3.jpg"
+                "http://i.imgur.com/qmvnneb.png",
+                "http://i.imgur.com/4wZckhH.jpg",
+                "http://i.imgur.com/8BzJSNM.jpg",
+                "http://i.imgur.com/mt3PApY.gif",
+                "http://i.imgur.com/rpUlDw2.jpg",
+                "http://i.imgur.com/JAbJNU8.jpg",
+                "http://i.imgur.com/STHLxsq.jpg",
+                "http://i.imgur.com/kAgqBPQ.jpg"
 
             };
 
@@ -47,8 +53,20 @@ namespace PeaceBot
 
             _discord.ExecuteAndWait(async () =>
             {
-                await _discord.Connect("MjkwODAzOTI0NTM2MDAwNTEy.C6gRvQ.eyMVt6U507LHn_T4hsgCxEkcXZc", TokenType.Bot);
+                
+                try
+                {
+                    await _discord.Connect("MjkwODAzOTI0NTM2MDAwNTEy.C6hk0Q.wcG1X7t8ZzbF0pKzC4tCYZSYcRE", TokenType.Bot);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
+                }
             });
+            
+            var sesID = _discord.SessionId;
+            var cancelToken =_discord.CancelToken;
+            lineChanger(sesID, 1);
         }
 
 
@@ -102,11 +120,15 @@ namespace PeaceBot
         private void RegisterMemeCommand()
         {
             _commands.CreateCommand("meme")
-                .Do(async (u) =>
+                .Do(async (e) =>
                 {
                     var randomMemeIndex = rand.Next(_freshestMemes.Length);
                     var memeToPost = _freshestMemes[randomMemeIndex];
-                    await u.Channel.SendFile(memeToPost);
+                    await e.Channel.SendMessage(memeToPost);
+                    // Old Meme Command. Reads from file.
+                    //var randomMemeIndex = rand.Next(_freshestMemes.Length);
+                    //var memeToPost = _freshestMemes[randomMemeIndex];
+                    //await e.Channel.SendFile(memeToPost);
                 });
         }
 
@@ -124,5 +146,13 @@ namespace PeaceBot
         {
             Console.WriteLine(e.Message);
         }
+
+        static void lineChanger(string newText, int line_to_edit)
+        {
+            string[] arrLine = File.ReadAllLines(sessionIDPath);
+            arrLine[line_to_edit - 1] = newText;
+            File.WriteAllLines(sessionIDPath, arrLine);
+        }
     }
+
 }
