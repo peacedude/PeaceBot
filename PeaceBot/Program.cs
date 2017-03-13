@@ -10,7 +10,7 @@ namespace PeaceBot
     {
         static void Main(string[] args)
         {
-            MyBot bot = new MyBot();
+            new MyBot();
         }
     }
 }

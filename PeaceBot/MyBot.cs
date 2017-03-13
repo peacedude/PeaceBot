@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Discord;
 using Discord.Commands;
 
@@ -11,6 +13,7 @@ namespace PeaceBot
 
         private Random rand;
 
+
         private readonly string[] _freshestMemes;
 
         public MyBot()
@@ -22,6 +25,7 @@ namespace PeaceBot
                 "meme/meme1.jpg",
                 "meme/meme2.jpg",
                 "meme/meme3.jpg"
+
             };
 
             _discord = new DiscordClient(x =>
@@ -36,11 +40,10 @@ namespace PeaceBot
                 x.AllowMentionPrefix = true;
             });
 
-            
+
             _commands = _discord.GetService<CommandService>();
 
-            RegisterMemeCommand();
-            RegisterPurgeCommand();
+            RegisterCommands();
 
             _discord.ExecuteAndWait(async () =>
             {
@@ -48,31 +51,51 @@ namespace PeaceBot
             });
         }
 
+
+        private void RegisterCommands()
+        {
+            RegisterMemeCommand();
+            RegisterPurgeCommand();
+            RegisterTestCommand();
+            RegisterPeaceCommandsCommand();
+        }
+
+        private void RegisterPeaceCommandsCommand()
+        {
+            _commands.CreateCommand("peacecommands")
+    .Do(async (e) =>
+    {
+        await e.Channel.SendMessage("!peacecommands - Get commands.\n!purge param - Delete 'param' amount of messages. Default = 5\n!meme - Posts a meme.");
+
+    });
+        }
+
         private void RegisterPurgeCommand()
         {
             _commands.CreateCommand("purge")
-                .Parameter("purgeAmount")
+                .Parameter("purgeAmount", ParameterType.Optional)
                 .Do(async (e) =>
                 {
-                    var amnt = 0;
-                    try
+                    if (e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault()))
                     {
-                        amnt = Convert.ToInt32(e.GetArg("purgeAmount"));
+                        int amnt = int.TryParse(e.GetArg("purgeAmount"), out amnt) ? int.Parse(e.GetArg("purgeAmount")) : 5;
+
+                        if (amnt <= 100)
+                        {
+                            var messagesToDelete = await e.Channel.DownloadMessages(amnt);
+                            await e.Channel.DeleteMessages(messagesToDelete);
+                            await e.Channel.SendMessage(amnt + " messages deleted.");
+                        }
+                        else if (amnt > 100)
+                        {
+                            await e.Channel.SendMessage("The maximum amount is 100.");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("Invalid amount.");
+                        }
                     }
-                    catch (FormatException)
-                    {
-                        await e.Channel.SendMessage("Invalid amount.");
-                    }
-                    if (amnt <= 100)
-                    {
-                        var messagesToDelete = await e.Channel.DownloadMessages(amnt);
-                        await e.Channel.DeleteMessages(messagesToDelete);
-                        await e.Channel.SendMessage(e.GetArg("purgeAmount") + " messages deleted.");
-                    }
-                    else if(amnt > 100)
-                    {
-                        await e.Channel.SendMessage("The maximum amount is 100.");
-                    }
+
                 });
         }
 
@@ -86,6 +109,16 @@ namespace PeaceBot
                     await u.Channel.SendFile(memeToPost);
                 });
         }
+
+        private void RegisterTestCommand()
+        {
+            _commands.CreateCommand("test")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage("https://i.imgur.com/Obg1wqc.jpg");
+                });
+        }
+
 
         private static void Log(object sender, LogMessageEventArgs e)
         {
