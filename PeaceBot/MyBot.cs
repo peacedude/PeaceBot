@@ -148,10 +148,13 @@ namespace PeaceBot
                         }
                         else if (amnt > 100)
                         {
-                            await e.Channel.SendMessage("The maximum amount is 100.");
+                            Log(e.User.Name + " on " + e.Server.Name + " tried to purged " + amnt + " messages but the limit is 100.");
+                            Console.WriteLine(e.User.Name + " on " + e.Server.Name + " tried to purged " + amnt + " messages but the limit is 100.");
+                            await e.Channel.SendMessage(e.User.Mention + ",The maximum purge amount is 100.");
                         }
                         else
                         {
+                            Log(e.User.Name + " on " + e.Server.Name + " tried to purged " + amnt + " messages but it was an invalid parameter.");
                             await e.Channel.SendMessage("Invalid amount.");
                         }
                     }
@@ -199,17 +202,17 @@ namespace PeaceBot
             using (StreamWriter w =
             new StreamWriter("Memory/log.txt", true))
             {
-
+                
                 if (OnceBool == false)
                 {
-                    w.WriteLine("-------------------|Starting bot|-----------------------");
+                    w.WriteLine("\n-------------------|Start logging|-----------------------");
                     OnceBool = true;
                 }
                 w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(),
                     DateTime.Now.ToLongDateString(), logMessage);
                 if (TurnOff)
                 {
-                    w.WriteLine("-------------------|Stopping bot|-----------------------\n");
+                    w.WriteLine("-------------------|Stop logging|-----------------------");
                 }
             }
         }
