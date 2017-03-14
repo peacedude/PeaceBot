@@ -9,6 +9,7 @@ namespace PeaceBot
 {
     class MyBot
     {
+        //Merge
         public readonly DiscordClient Discord;
         public readonly CommandService Commands;
         private readonly Random _rand;
