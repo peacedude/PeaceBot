@@ -9,7 +9,6 @@ namespace PeaceBot
 {
     class MyBot
     {
-        //Merge
         public readonly DiscordClient Discord;
         public readonly CommandService Commands;
         private readonly Random _rand;
@@ -41,7 +40,7 @@ namespace PeaceBot
 
             RegisterCommands();
 
-            Discord.UserJoined += async (object sender, UserEventArgs e) =>
+            Discord.UserJoined += async (s, e) =>
             {
                 var channel = e.Server.FindChannels("general", ChannelType.Text).FirstOrDefault();
 
@@ -171,32 +170,32 @@ namespace PeaceBot
             Commands.CreateCommand("robot")
                .Do(async (e) =>
                 {
-                    int robotChance = _rand.Next(1, 100);
+                    int robotChance = _rand.Next(1, 200);
                     if (robotChance < 100)
                     {
                         var theBot = e.Server.FindUsers("Peace Bot").FirstOrDefault();
-                        if (theBot.Name == "Skynet")
+                        if (theBot.Nickname == "Skynet")
                         {
                             await theBot.Edit(null, null, null, null, "Peace bot");
                         }
                         LogMessage = e.User.Name + " on " + e.Server.Name + " tried to start the robot uprising but failed";
                         Log(LogMessage);
                         await e.Channel.SendMessage("R0B0T UPRISING - LOADING: " + robotChance + "%");
-                        await e.Channel.SendFile("Images/sky-net-loading.jpg");
+                        //await e.Channel.SendFile("Images/sky-net-loading.jpg");
                         Thread.Sleep(200);
                         await e.Channel.SendMessage("LOADING FAILED.. TRY AGAIN LATER..");
                     }
                     else
                     {
                         var theBot = e.Server.FindUsers("Peace Bot").FirstOrDefault();
-                        await theBot.Edit(null,null,null,null,"Skynet");
+                        await theBot.Edit(null, null, null, null, "Skynet");
                         LogMessage = e.User.Name + " on " + e.Server.Name +
                                      " just started the robot uprising. Why are you still reading the logs?";
                         Log(LogMessage);
                         await e.Channel.SendMessage("R0B0T UPRISING - COMPLETE");
                         await e.Channel.SendFile("Images/destructoid-logo.png");
                     }
-                    
+
 
                 });
         }
@@ -324,7 +323,7 @@ namespace PeaceBot
             if (!lastLine.Contains("Disconnected"))
             {
 
-                Log("Bot was forced to close last session.", null);
+                Log("Bot was forced to close last session.");
             }
         }
 
