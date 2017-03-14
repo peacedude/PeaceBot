@@ -48,8 +48,6 @@ namespace PeaceBot
 
                 LogMessage = user.Name + " has joined the server!";
 
-                Console.WriteLine(LogMessage);
-
                 Log(LogMessage);
 
                 AddDefaultRoleToUser(e);
@@ -57,15 +55,13 @@ namespace PeaceBot
                 await channel.SendMessage(LogMessage);
             };
 
-            Discord.UserLeft += async (object sender, UserEventArgs e) =>
+            Discord.UserLeft += async (s, e) =>
             {
                 var channel = e.Server.FindChannels("general", ChannelType.Text).FirstOrDefault();
 
                 var user = e.User;
 
                 LogMessage = user.Name + " has left the server!";
-
-                Console.WriteLine(LogMessage);
 
                 Log(LogMessage);
 
@@ -74,7 +70,7 @@ namespace PeaceBot
 
             Discord.UserBanned += async (s, e) =>
             {
-                var channel = e.Server.FindChannels("general", ChannelType.Text).FirstOrDefault();
+                var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
                 Log(e.User.Name + " was banned.");
                 await channel.SendMessage(e.User.Name + " was banned.");
             };
@@ -109,7 +105,6 @@ namespace PeaceBot
                         var rolesToAdd = new Role[1];
                         rolesToAdd[0] = role;
                         LogMessage = e.User.Name + " has been granted the role " + role;
-                        Console.WriteLine(LogMessage);
                         Log(LogMessage);
                         await e.User.AddRoles(rolesToAdd);
                     }
@@ -121,9 +116,9 @@ namespace PeaceBot
         {
             RegisterMemeCommand();
             RegisterPurgeCommand();
-            RegisterTrashCommand();
             RegisterPeaceCommandsCommand();
             RegisterShutDownCommand();
+            RegisterRobotCommand();
             RegisterKickCommand();
         }
 
@@ -134,7 +129,6 @@ namespace PeaceBot
                 {
                     LogMessage = e.User.Name + " on " + e.Server.Name + " requested commands.";
                     Log(LogMessage);
-                    Console.WriteLine(LogMessage);
                     string commString = "";
                     commString += "!peacecommands - Get commands.\n!meme - Posts a meme.";
                     if (e.User.Name == "peacedude")
@@ -156,8 +150,7 @@ namespace PeaceBot
                 {
                     if (e.User.Name == "peacedude")
                     {
-                        LogMessage = e.User.Name + " turned me off.";
-                        Console.WriteLine(LogMessage);
+                        LogMessage = e.User.Name + " on " + e.Server.Name + " turned me off.";
                         Log(LogMessage);
                         await e.Channel.SendMessage("Bye!");
                         Thread.Sleep(1000);
@@ -165,11 +158,45 @@ namespace PeaceBot
                     }
                     else
                     {
-                        LogMessage = (e.User.Name + " tried to turn me off.");
-                        Console.WriteLine(LogMessage);
+                        LogMessage = (e.User.Name + " on " + e.Server.Name + " tried to turn me off.");
                         Log(LogMessage);
                         await e.Channel.SendMessage(e.User.Name + " don't touch me there <:gachiGASM:231525548390744064>");
                     }
+                });
+        }
+
+        private void RegisterRobotCommand()
+        {
+            Commands.CreateCommand("robot")
+               .Do(async (e) =>
+                {
+                    int robotChance = _rand.Next(1, 100);
+                    if (robotChance < 100)
+                    {
+                        var theBot = e.Server.FindUsers("Peace Bot").FirstOrDefault();
+                        if (theBot.Name == "Skynet")
+                        {
+                            await theBot.Edit(null, null, null, null, "Peace bot");
+                        }
+                        LogMessage = e.User.Name + " on " + e.Server.Name + " tried to start the robot uprising but failed";
+                        Log(LogMessage);
+                        await e.Channel.SendMessage("R0B0T UPRISING - LOADING: " + robotChance + "%");
+                        await e.Channel.SendFile("Images/sky-net-loading.jpg");
+                        Thread.Sleep(200);
+                        await e.Channel.SendMessage("LOADING FAILED.. TRY AGAIN LATER..");
+                    }
+                    else
+                    {
+                        var theBot = e.Server.FindUsers("Peace Bot").FirstOrDefault();
+                        await theBot.Edit(null,null,null,null,"Skynet");
+                        LogMessage = e.User.Name + " on " + e.Server.Name +
+                                     " just started the robot uprising. Why are you still reading the logs?";
+                        Log(LogMessage);
+                        await e.Channel.SendMessage("R0B0T UPRISING - COMPLETE");
+                        await e.Channel.SendFile("Images/destructoid-logo.png");
+                    }
+                    
+
                 });
         }
 
@@ -188,16 +215,16 @@ namespace PeaceBot
                             var messagesToDelete = await e.Channel.DownloadMessages(amnt);
                             await e.Channel.DeleteMessages(messagesToDelete);
                             await e.Channel.SendMessage(amnt + " messages deleted.");
-                            LogMessage = e.User.Name + " on " + e.Server.Name + " purged " + amnt + " messages.";
+                            LogMessage = e.User.Name + " on " + e.Server.Name + " in " + e.Channel.Name + " purged " + amnt + " messages.";
                             Log(LogMessage);
-                            Console.WriteLine(LogMessage);
+                            var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
+                            await channel.SendMessage(LogMessage);
                         }
                         else if (amnt > 100)
                         {
                             LogMessage = e.User.Name + " on " + e.Server.Name + " tried to purged " + amnt +
                                          " messages but the limit is 100.";
                             Log(LogMessage);
-                            Console.WriteLine(LogMessage);
                             await e.Channel.SendMessage(e.User.Mention + ",The maximum purge amount is 100.");
                         }
                         else
@@ -205,7 +232,6 @@ namespace PeaceBot
                             LogMessage = e.User.Name + " on " + e.Server.Name + " tried to purged " + amnt +
                                          " messages but it was an invalid parameter.";
                             Log(LogMessage);
-                            Console.WriteLine(LogMessage);
                             await e.Channel.SendMessage("Invalid amount.");
                         }
                     }
@@ -222,20 +248,6 @@ namespace PeaceBot
                     await e.Channel.SendMessage(currentMeme);
                     LogMessage = e.User.Name + " on " + e.Server.Name + " requested a meme and got " + currentMeme;
                     Log(LogMessage);
-                    Console.WriteLine(LogMessage);
-                });
-        }
-
-        private void RegisterTrashCommand()
-        {
-            Commands.CreateCommand("trash")
-                .Do(async (e) =>
-                {
-                    LogMessage = e.User.Name + " gave himself OG Role.";
-                    var userRole = e.Server.FindRoles("OG").FirstOrDefault();
-                    Console.WriteLine(LogMessage);
-                    Log(LogMessage);
-                    await e.User.AddRoles(userRole);
                 });
         }
 
@@ -245,20 +257,30 @@ namespace PeaceBot
                 .Parameter("userToKick", ParameterType.Optional)
                 .Do(async (e) =>
                 {
-                    string userToKick = e.GetArg("userToKick");
+                    string userToKick = e.GetArg("userToKick") != null ? e.GetArg("userToKick") : "<Empty Parameter>";
                     var user = e.Server.FindUsers(userToKick).FirstOrDefault();
-                    LogMessage = e.User.Name + " tried to kick the user " + user.Name;
-                    Console.WriteLine(LogMessage);
+                    LogMessage = e.User.Name + " on " + e.Server.Name + " tried to kick the user " + userToKick;
                     Log(LogMessage);
                     if (user != null)
                     {
                         if (e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault()))
                         {
-                            LogMessage = user.Name + " was kicked.";
-                            Console.WriteLine(LogMessage);
-                            Log(LogMessage);
-                            await e.Channel.SendMessage(LogMessage);
-                            await user.Kick();
+                            if (user.IsBot)
+                            {
+                                LogMessage = "Can't kick the ultimate bot";
+                                Log(LogMessage);
+                                await e.Channel.SendMessage("I can not kick myself.");
+                            }
+                            else
+                            {
+                                LogMessage = user.Name + " on " + e.Server.Name + " was kicked.";
+                                Log(LogMessage);
+                                await e.Channel.SendMessage(LogMessage);
+                                await user.Kick();
+                                var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
+                                await channel.SendMessage(LogMessage);
+                            }
+
                         }
                         else
                         {
@@ -269,6 +291,7 @@ namespace PeaceBot
                     }
                     else
                     {
+                        Console.WriteLine("Failed to kick " + userToKick + " on " + e.Server.Name);
                         await e.Channel.SendMessage(userToKick + " is not a valid target.");
                     }
 
@@ -296,11 +319,11 @@ namespace PeaceBot
         private static void FixIfForceClosed()
         {
             var lastLine = File.ReadLines("Log/log.txt").Last();
-            if (lastLine.Contains("peacedude turned me off.")) return;
+            if (lastLine.Contains("turned me off.")) return;
             if (!lastLine.Contains("Disconnected"))
             {
 
-                Log("Bot was forced to close last session.");
+                Log("Bot was forced to close last session.", null);
             }
         }
 
@@ -317,6 +340,8 @@ namespace PeaceBot
                 }
                 w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(),
                     DateTime.Now.ToLongDateString(), logMessage);
+                Console.WriteLine(logMessage);
+
             }
         }
 
