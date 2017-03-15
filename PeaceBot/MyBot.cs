@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using Discord;
 using Discord.Commands;
+using Discord.Modules;
 
 namespace PeaceBot
 {
@@ -15,6 +17,9 @@ namespace PeaceBot
         private int _lastNumber;
         public static bool OnceBool { get; set; }
         public string LogMessage { get; set; }
+        private List<string> memeList;
+        private const string MOD_LOGS_CHANNEL = "mod_logs";
+        private const string GENERAL_CHANNEL = "general";
 
         private readonly string _discordToken = Utilities.Token.GetToken("DiscordToken");
 
@@ -33,6 +38,7 @@ namespace PeaceBot
             {
                 x.PrefixChar = '!';
                 x.AllowMentionPrefix = true;
+                x.HelpMode = HelpMode.Public;
             });
 
 
@@ -42,7 +48,7 @@ namespace PeaceBot
 
             Discord.UserJoined += async (s, e) =>
             {
-                var channel = e.Server.FindChannels("general", ChannelType.Text).FirstOrDefault();
+                var channel = e.Server.FindChannels(GENERAL_CHANNEL, ChannelType.Text).FirstOrDefault();
 
                 var user = e.User;
 
@@ -57,7 +63,7 @@ namespace PeaceBot
 
             Discord.UserLeft += async (s, e) =>
             {
-                var channel = e.Server.FindChannels("general", ChannelType.Text).FirstOrDefault();
+                var channel = e.Server.FindChannels(GENERAL_CHANNEL, ChannelType.Text).FirstOrDefault();
 
                 var user = e.User;
 
@@ -70,7 +76,7 @@ namespace PeaceBot
 
             Discord.UserBanned += async (s, e) =>
             {
-                var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
+                var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
                 Log(e.User.Name + " was banned.");
                 await channel.SendMessage(e.User.Name + " was banned.");
             };
@@ -116,36 +122,28 @@ namespace PeaceBot
         {
             RegisterMemeCommand();
             RegisterPurgeCommand();
-            RegisterPeaceCommandsCommand();
             RegisterShutDownCommand();
             RegisterRobotCommand();
             RegisterKickCommand();
+            RegisterBabylonCommand();
+            var memeFile = File.ReadAllLines("Log/meme.txt");
+            memeList = new List<string>(memeFile);
         }
 
-        private void RegisterPeaceCommandsCommand()
+        private void RegisterBabylonCommand()
         {
-            Commands.CreateCommand("peacecommands")
-    .Do(async (e) =>
-                {
-                    LogMessage = e.User.Name + " on " + e.Server.Name + " requested commands.";
-                    Log(LogMessage);
-                    string commString = "";
-                    commString += "!peacecommands - Get commands.\n!meme - Posts a meme.";
-                    if (e.User.Name == "peacedude")
-                    {
-                        commString += "\n!quit - Turn off bot";
-                    }
-                    if (e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault()))
-                    {
-                        commString += "\n!purge param - Delete 'param' amount of messages. Default = 5";
-                    }
-                    await e.User.SendMessage(commString);
-                });
+            Commands.CreateCommand("babylon")
+                .Description("BURN BABYLON")
+                .Do(async (e) =>
+            {
+                await e.Channel.SendMessage("<:CiGrip:257865220314234880> https://www.youtube.com/watch?v=6R4F9uTaXxk <:CiGrip:257865220314234880>");
+            });
         }
 
         private void RegisterShutDownCommand()
         {
             Commands.CreateCommand("quit")
+                .Description("Turns off the bot.")
                 .Do(async (e) =>
                 {
                     if (e.User.Name == "peacedude")
@@ -168,6 +166,7 @@ namespace PeaceBot
         private void RegisterRobotCommand()
         {
             Commands.CreateCommand("robot")
+                .Description("Try to start a robot uprising.")
                .Do(async (e) =>
                 {
                     int robotChance = _rand.Next(1, 200);
@@ -203,6 +202,7 @@ namespace PeaceBot
         private void RegisterPurgeCommand()
         {
             Commands.CreateCommand("purge")
+                .Description("Removes up to 100 messages. Default value is 5. Example: !purge 20")
                 .Parameter("purgeAmount", ParameterType.Optional)
                 .Do(async (e) =>
                 {
@@ -217,7 +217,7 @@ namespace PeaceBot
                             await e.Channel.SendMessage(amnt + " messages deleted.");
                             LogMessage = e.User.Name + " on " + e.Server.Name + " in " + e.Channel.Name + " purged " + amnt + " messages.";
                             Log(LogMessage);
-                            var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
+                            var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
                             await channel.SendMessage(LogMessage);
                         }
                         else if (amnt > 100)
@@ -242,18 +242,46 @@ namespace PeaceBot
         private void RegisterMemeCommand()
         {
             Commands.CreateCommand("meme")
+                .Parameter("memeUrl", ParameterType.Optional)
+                .Description("Gives you a random meme.")
                 .Do(async (e) =>
                 {
-                    string currentMeme = GetFreshMemes();
-                    await e.Channel.SendMessage(currentMeme);
-                    LogMessage = e.User.Name + " on " + e.Server.Name + " requested a meme and got " + currentMeme;
-                    Log(LogMessage);
+                    string memeToAdd = e.GetArg("memeUrl");
+                    if (memeToAdd == string.Empty)
+                    {
+                        string currentMeme = GetFreshMemes();
+                        await e.Channel.SendMessage(currentMeme);
+                        LogMessage = e.User.Name + " on " + e.Server.Name + " requested a meme and got " + currentMeme;
+                        Log(LogMessage);
+                    }
+                    else if (memeToAdd.Contains("imgur.com"))
+                    {
+                        AddMeme(memeToAdd);
+                        memeList.Add(memeToAdd);
+                        await e.Channel.SendMessage(e.User.Name + " added a meme to the meme list");
+                        var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
+                        LogMessage = e.User.Name + " on " + e.Server.Name + " added the url " + memeToAdd + " to the list of memes.";
+                        Log(LogMessage);
+                        await channel.SendMessage(LogMessage);
+                    }
+
                 });
+        }
+
+        private static void AddMeme(string url)
+        {
+            using (var w =
+            new StreamWriter("Log/meme.txt", true))
+            {
+                w.WriteLine(url);
+                
+            }
         }
 
         private void RegisterKickCommand()
         {
             Commands.CreateCommand("kick")
+                .Description("Kick the mentioned player. Example: !kick <@!290803924536000512>")
                 .Parameter("userToKick", ParameterType.Optional)
                 .Do(async (e) =>
                 {
@@ -277,7 +305,7 @@ namespace PeaceBot
                                 Log(LogMessage);
                                 await e.Channel.SendMessage(LogMessage);
                                 await user.Kick();
-                                var channel = e.Server.FindChannels("mod_logs", ChannelType.Text).FirstOrDefault();
+                                var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
                                 await channel.SendMessage(LogMessage);
                             }
 
@@ -301,19 +329,6 @@ namespace PeaceBot
         private static void Log(object sender, LogMessageEventArgs e)
         {
             Console.WriteLine(e.Message);
-            using (var w =
-           new StreamWriter("Memory/log.txt", true))
-            {
-
-                if (OnceBool == false)
-                {
-                    w.WriteLine("\n-------------------|Start logging|-----------------------");
-                    OnceBool = true;
-                }
-                w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(),
-                    DateTime.Now.ToLongDateString(), e.Message);
-
-            }
         }
 
         private static void FixIfForceClosed()
@@ -332,12 +347,6 @@ namespace PeaceBot
             using (var w =
             new StreamWriter("Log/log.txt", true))
             {
-
-                if (OnceBool == false)
-                {
-                    w.WriteLine("\n-------------------|Start logging|-----------------------");
-                    OnceBool = true;
-                }
                 w.WriteLine("{0} {1} : {2}", DateTime.Now.ToLongTimeString(),
                     DateTime.Now.ToLongDateString(), logMessage);
                 Console.WriteLine(logMessage);
@@ -348,37 +357,16 @@ namespace PeaceBot
         public string GetFreshMemes()
         {
             var rnd = new Random();
-            var freshestMemes = new[]
-            {
-                "http://i.imgur.com/qmvnneb.png",
-                "http://i.imgur.com/4wZckhH.jpg",
-                "http://i.imgur.com/8BzJSNM.jpg",
-                "http://i.imgur.com/mt3PApY.gif",
-                "http://i.imgur.com/rpUlDw2.jpg",
-                "http://i.imgur.com/JAbJNU8.jpg",
-                "http://i.imgur.com/STHLxsq.jpg",
-                "http://i.imgur.com/kAgqBPQ.jpg",
-                "https://i.redd.it/ue6uztfw36ly.jpg",
-                "https://i.redd.it/vlufm6a768ly.jpg",
-                "https://i.imgur.com/cej88C3.jpg",
-                "http://i.imgur.com/s4EA4tD.jpg",
-                "https://i.imgur.com/Hozfqi5.jpg",
-                "https://i.redd.it/uf3nt10u43ly.jpg",
-                "https://i.imgur.com/qVPf2sv.jpg"
-
-            };
-            var randomMemeIndex = rnd.Next(freshestMemes.Length);
+            var randomMemeIndex = rnd.Next(memeList.Count);
 
             while (randomMemeIndex == _lastNumber)
             {
-                randomMemeIndex = _rand.Next(freshestMemes.Length);
+                randomMemeIndex = _rand.Next(memeList.Count);
             }
             _lastNumber = randomMemeIndex;
-            var memeToPost = freshestMemes[randomMemeIndex];
+            var memeToPost = memeList[randomMemeIndex];
             return memeToPost;
         }
-
-
     }
 
 }
