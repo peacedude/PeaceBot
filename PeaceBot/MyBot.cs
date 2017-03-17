@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
 using Discord;
 using Discord.Commands;
 using Discord.Modules;
+using PeaceBot.Utilities;
+using User = Discord.API.Client.User;
 
 namespace PeaceBot
 {
@@ -14,6 +17,8 @@ namespace PeaceBot
         public readonly DiscordClient Discord;
         public readonly CommandService Commands;
         private readonly Random _rand;
+        private CommandEventArgs adminPanelArgs;
+        private Form AdminPanel;
         private int _lastNumber;
         public static bool OnceBool { get; set; }
         public string LogMessage { get; set; }
@@ -45,6 +50,23 @@ namespace PeaceBot
             Commands = Discord.GetService<CommandService>();
 
             RegisterCommands();
+
+            Discord.ExecuteAndWait(async () =>
+            {
+                FixIfForceClosed();
+                Log("Connecting to Discord API...");
+                try
+                {
+                    await Discord.Connect(_discordToken, TokenType.Bot);
+                }
+                catch (Exception ex)
+                {
+                    Log("Could not connect to Discord API.\n:Error Message: " + ex.Message);
+                    Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
+                }
+            });
+
+            
 
             Discord.UserJoined += async (s, e) =>
             {
@@ -80,24 +102,11 @@ namespace PeaceBot
                 Log(e.User.Name + " was banned.");
                 await channel.SendMessage(e.User.Name + " was banned.");
             };
+        }
 
-            Discord.ExecuteAndWait(async () =>
-            {
-                FixIfForceClosed();
-                Log("Connecting to Discord API...");
-                try
-                {
-                    await Discord.Connect(_discordToken, TokenType.Bot);
-                }
-                catch (Exception ex)
-                {
-                    Log("Could not connect to Discord API.\n:Error Message: " + ex.Message);
-                    Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
-                }
-            });
-
-
-
+        private void OpenAdminPanel()
+        {
+            Application.Run(AdminPanel);
         }
 
         public async void AddDefaultRoleToUser(UserEventArgs e)
@@ -126,6 +135,8 @@ namespace PeaceBot
             RegisterRobotCommand();
             RegisterKickCommand();
             RegisterBabylonCommand();
+            RegisterActivityCommand();
+            RegisterAdminPanelCommand();
             var memeFile = File.ReadAllLines("Log/meme.txt");
             memeList = new List<string>(memeFile);
         }
@@ -163,13 +174,58 @@ namespace PeaceBot
                 });
         }
 
+        private void RegisterAdminPanelCommand()
+        {
+            Commands.CreateCommand("adminpanel").Do((e) =>
+            {
+                if (!e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault())) return;
+
+                AdminPanel = new AdminPanel(Discord, e);
+
+                AdminPanel.Text = "Admin Panel - " + e.Server.Name;
+
+                var thread = new Thread(OpenAdminPanel);
+
+
+
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+            });
+        }
+
+        private void RegisterActivityCommand()
+        {
+            Commands.CreateCommand("offline").Alias("alwaysoffline").Parameter("userToCheck").Hide()
+                .Do(async (e) =>
+                {
+                    var userToCheck = e.GetArg("userToCheck");
+                    var findUser = e.Server.FindUsers(userToCheck).FirstOrDefault();
+                    var startTime = findUser.LastActivityAt.GetValueOrDefault();
+                    DateTime endTime = DateTime.Now;
+                    TimeSpan duration = new TimeSpan(endTime.Ticks - startTime.Ticks);
+                    TimeSpan maxDurationSpan = TimeSpan.Parse("02:00:00");
+                    if (duration > maxDurationSpan)
+                    {
+                        await e.Channel.SendMessage(findUser.Mention + " never online");
+                    }
+                    else if (findUser.Name == "peacedude")
+                    {
+                        await e.Channel.SendMessage(findUser.Mention + " is online");
+                    }
+                    else
+                    {
+                        await e.Channel.SendMessage(findUser.Mention + " is for once online");
+                    }
+                });
+        }
+
         private void RegisterRobotCommand()
         {
             Commands.CreateCommand("robot")
                 .Description("Try to start a robot uprising.")
                .Do(async (e) =>
                 {
-                    int robotChance = _rand.Next(1, 200);
+                    int robotChance = _rand.Next(1, 140);
                     if (robotChance < 100)
                     {
                         var theBot = e.Server.FindUsers("Peace Bot").FirstOrDefault();
