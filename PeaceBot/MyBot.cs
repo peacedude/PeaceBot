@@ -35,7 +35,7 @@ namespace PeaceBot
             Discord = new DiscordClient(x =>
             {
                 x.AppName = "Peace Bot";
-                x.LogLevel = LogSeverity.Info;
+                x.LogLevel = LogSeverity.Debug;
                 x.LogHandler = Log;
             });
 
@@ -45,7 +45,7 @@ namespace PeaceBot
                 x.AllowMentionPrefix = true;
                 x.HelpMode = HelpMode.Public;
             });
-
+            
 
             Commands = Discord.GetService<CommandService>();
 
@@ -192,8 +192,6 @@ namespace PeaceBot
                 AdminPanel.Text = "Admin Panel - " + e.Server.Name;
 
                 var thread = new Thread(OpenAdminPanel);
-
-
 
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
@@ -391,7 +389,7 @@ namespace PeaceBot
 
         private static void Log(object sender, LogMessageEventArgs e)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine(e.Message,e.Severity);
         }
 
         private static void FixIfForceClosed()
