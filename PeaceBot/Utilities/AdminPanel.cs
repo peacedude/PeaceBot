@@ -78,7 +78,10 @@ namespace PeaceBot.Utilities
 
             foreach (var user in serverUsers)
             {
-                userList.Items.Add(user.Name);
+                if (!user.IsBot)
+                {
+                    userList.Items.Add(user.Name);
+                }
             }
         }
     }

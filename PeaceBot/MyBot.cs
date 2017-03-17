@@ -102,6 +102,13 @@ namespace PeaceBot
                 Log(e.User.Name + " was banned.");
                 await channel.SendMessage(e.User.Name + " was banned.");
             };
+
+            Discord.UserUnbanned += async (s, e) =>
+            {
+                var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
+                Log(e.User.Name + " was unbanned.");
+                await channel.SendMessage(e.User.Name + " was unbanned.");
+            };
         }
 
         private void OpenAdminPanel()
