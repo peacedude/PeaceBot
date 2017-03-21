@@ -17,8 +17,8 @@ namespace PeaceBot
         public readonly DiscordClient Discord;
         public readonly CommandService Commands;
         private readonly Random _rand;
-        private CommandEventArgs adminPanelArgs;
         private Form AdminPanel;
+        private DateTime startTime;
         private int _lastNumber;
         public static bool OnceBool { get; set; }
         public string LogMessage { get; set; }
@@ -26,11 +26,15 @@ namespace PeaceBot
         private const string MOD_LOGS_CHANNEL = "mod_logs";
         private const string GENERAL_CHANNEL = "general";
 
+
         private readonly string _discordToken = Utilities.Token.GetToken("DiscordToken");
 
         public MyBot()
         {
             _rand = new Random();
+            startTime = new DateTime();
+
+            startTime = DateTime.Now;
 
             Discord = new DiscordClient(x =>
             {
@@ -65,8 +69,6 @@ namespace PeaceBot
                     Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
                 }
             });
-
-            
 
             Discord.UserJoined += async (s, e) =>
             {
@@ -185,16 +187,22 @@ namespace PeaceBot
         {
             Commands.CreateCommand("adminpanel").Do((e) =>
             {
-                if (!e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault())) return;
+                try
+                {
+                    if (!e.User.HasRole(e.Server.FindRoles("Mod").FirstOrDefault())) return;
 
-                AdminPanel = new AdminPanel(Discord, e);
+                    AdminPanel = new AdminPanel(Discord, e, startTime) {Text = "Admin Panel - " + e.Server.Name};
 
-                AdminPanel.Text = "Admin Panel - " + e.Server.Name;
 
-                var thread = new Thread(OpenAdminPanel);
+                    var thread = new Thread(OpenAdminPanel);
 
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.Start();
+                    thread.SetApartmentState(ApartmentState.STA);
+                    thread.Start();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             });
         }
 
