@@ -17,9 +17,10 @@ namespace PeaceBot.Utilities
     {
         private CommandEventArgs e;
         private DiscordClient client;
-        private DateTime startTime;
-        private DateTime currentTime;
-        private string errorMessage;
+        private readonly DateTime startTime;
+        private DateTime _currentTime;
+        private Channel _channel;
+        private string _errorMessage;
         private const string MOD_LOGS_CHANNEL = "mod_logs";
 
         public AdminPanel(DiscordClient client, CommandEventArgs e, DateTime startTime)
@@ -47,9 +48,9 @@ namespace PeaceBot.Utilities
 
             catch (NullReferenceException)
             {
-                errorMessage = "Error: Did you select someone?";
-                Console.WriteLine(errorMessage);
-                errorLabel.Text = errorMessage;
+                _errorMessage = "Error: Did you select someone?";
+                Console.WriteLine(_errorMessage);
+                errorLabel.Text = _errorMessage;
             }
             var channel = this.e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
             var userToKick = this.e.Channel.Users.FirstOrDefault(input => input.Name.ToUpper() == usernameToKick);
@@ -76,9 +77,9 @@ namespace PeaceBot.Utilities
 
             catch (NullReferenceException)
             {
-                errorMessage = "Error: Did you select someone?";
-                Console.WriteLine(errorMessage);
-                errorLabel.Text = errorMessage;
+                _errorMessage = "Error: Did you select someone?";
+                Console.WriteLine(_errorMessage);
+                errorLabel.Text = _errorMessage;
             }
             var channel = this.e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
             var userToBan =
@@ -106,15 +107,15 @@ namespace PeaceBot.Utilities
             userList.Items.Clear();
             channelBox.Items.Clear();
             errorLabel.Text = "";
-            currentTime = DateTime.Now;
-            var minutes = Math.Round((currentTime - startTime).TotalMinutes, 2);
+            _currentTime = DateTime.Now;
+            var minutes = Math.Round((_currentTime - startTime).TotalMinutes, 2);
             uptimeLabel.Text = $"Uptime: {minutes} minutes";
             var serverUsers = this.e.Server.Users;
             
                 
             var enumerable = serverUsers as User[] ?? serverUsers.ToArray();
-            int users = 0;
-            int bots = 0;
+            var users = 0;
+            var bots = 0;
 
 
             foreach (var channel in this.e.Server.TextChannels)
@@ -145,31 +146,31 @@ namespace PeaceBot.Utilities
         private async void purgeButton_Click(object sender, EventArgs e)
         {
             int amnt = int.TryParse(purgeTextBox.Text, out amnt) ? int.Parse(purgeTextBox.Text) : 5;
-            var channel = this.e.Server.FindChannels(channelBox.Text).FirstOrDefault();
-            var LogMessage = string.Empty;
+            
+            string logMessage;
 
             if (amnt <= 100)
             {
                 var messagesToDelete = await this.e.Channel.DownloadMessages(amnt);
                 await this.e.Channel.DeleteMessages(messagesToDelete);
                 await this.e.Channel.SendMessage(amnt + " messages deleted.");
-                LogMessage = this.e.User.Name + " on " + this.e.Server.Name + " in " + this.e.Channel.Name + " purged " + amnt + " messages.";
-                MyBot.Log(LogMessage);
-                channel = this.e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
-                await channel.SendMessage(LogMessage);
+                logMessage = this.e.User.Name + " on " + this.e.Server.Name + " in " + this.e.Channel.Name + " purged " + amnt + " messages.";
+                MyBot.Log(logMessage);
+                _channel = this.e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
+                await _channel.SendMessage(logMessage);
             }
             else if (amnt > 100)
             {
-                LogMessage = this.e.User.Name + " on " + this.e.Server.Name + " tried to purged " + amnt +
+                logMessage = this.e.User.Name + " on " + this.e.Server.Name + " tried to purged " + amnt +
                              " messages but the limit is 100.";
-                MyBot.Log(LogMessage);
+                MyBot.Log(logMessage);
                 await this.e.Channel.SendMessage(this.e.User.Mention + ",The maximum purge amount is 100.");
             }
             else
             {
-                LogMessage = this.e.User.Name + " on " + this.e.Server.Name + " tried to purged " + amnt +
+                logMessage = this.e.User.Name + " on " + this.e.Server.Name + " tried to purged " + amnt +
                              " messages but it was an invalid parameter.";
-                MyBot.Log(LogMessage);
+                MyBot.Log(logMessage);
                 await this.e.Channel.SendMessage("Invalid amount.");
             }
         }
