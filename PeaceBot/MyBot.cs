@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Discord;
 using Discord.Commands;
 using Discord.Modules;
 using PeaceBot.Utilities;
-using User = Discord.API.Client.User;
 
 namespace PeaceBot
 {
@@ -27,7 +27,7 @@ namespace PeaceBot
         private const string GENERAL_CHANNEL = "general";
 
 
-        private readonly string _discordToken = Utilities.Token.GetToken("DiscordToken");
+        private readonly string _discordToken = Token.GetToken("DiscordToken");
 
         public MyBot()
         {
@@ -139,6 +139,7 @@ namespace PeaceBot
         private void RegisterCommands()
         {
             RegisterMemeCommand();
+            RegisterPeaceCommand();
             RegisterPurgeCommand();
             RegisterShutDownCommand();
             RegisterRobotCommand();
@@ -146,8 +147,34 @@ namespace PeaceBot
             RegisterBabylonCommand();
             RegisterActivityCommand();
             RegisterAdminPanelCommand();
+            RegisterGameCommand();
             var memeFile = File.ReadAllLines("Log/meme.txt");
             memeList = new List<string>(memeFile);
+        }
+
+        private void RegisterGameCommand()
+        {
+            Commands.CreateCommand("game").Parameter("gameToSet").Do(async (e) =>
+            {
+                var findUser = e.Server.FindUsers("peacedude").FirstOrDefault();
+                if (findUser.Name == "peacedude")
+                {
+                    var channel = e.Server.FindChannels(MOD_LOGS_CHANNEL, ChannelType.Text).FirstOrDefault();
+                    var gameToCheck = e.GetArg("gameToSet");
+                    Discord.SetGame(gameToCheck);
+                    if (channel != null) await channel.SendMessage("Game set to " + gameToCheck);
+                }
+            });
+        }
+
+        private void RegisterPeaceCommand()
+        {
+            
+            Commands.CreateCommand("peacedude").Alias("botmaster")
+                .Do(async (e) =>
+                {
+                    await e.Channel.SendMessage("http://i.imgur.com/Hfzf14T.gifv");
+                });
         }
 
         private void RegisterBabylonCommand()

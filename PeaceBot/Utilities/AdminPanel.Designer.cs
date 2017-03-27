@@ -39,8 +39,9 @@
             this.purgeTextBox = new System.Windows.Forms.TextBox();
             this.purgeButton = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.uptimeLabel = new System.Windows.Forms.Label();
             this.channelBox = new System.Windows.Forms.ComboBox();
+            this.uptimeLabel = new System.Windows.Forms.Label();
+            this.colorDialog1 = new System.Windows.Forms.ColorDialog();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -155,6 +156,14 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Chat Control";
             // 
+            // channelBox
+            // 
+            this.channelBox.FormattingEnabled = true;
+            this.channelBox.Location = new System.Drawing.Point(12, 20);
+            this.channelBox.Name = "channelBox";
+            this.channelBox.Size = new System.Drawing.Size(229, 21);
+            this.channelBox.TabIndex = 12;
+            // 
             // uptimeLabel
             // 
             this.uptimeLabel.AutoSize = true;
@@ -163,14 +172,6 @@
             this.uptimeLabel.Size = new System.Drawing.Size(43, 13);
             this.uptimeLabel.TabIndex = 11;
             this.uptimeLabel.Text = "Uptime:";
-            // 
-            // channelBox
-            // 
-            this.channelBox.FormattingEnabled = true;
-            this.channelBox.Location = new System.Drawing.Point(12, 20);
-            this.channelBox.Name = "channelBox";
-            this.channelBox.Size = new System.Drawing.Size(229, 21);
-            this.channelBox.TabIndex = 12;
             // 
             // AdminPanel
             // 
@@ -209,5 +210,6 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label uptimeLabel;
         private System.Windows.Forms.ComboBox channelBox;
+        private System.Windows.Forms.ColorDialog colorDialog1;
     }
 }
