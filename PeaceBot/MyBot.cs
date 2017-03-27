@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using Discord;
@@ -18,14 +19,13 @@ namespace PeaceBot
         public readonly CommandService Commands;
         private readonly Random _rand;
         private Form AdminPanel;
-        private DateTime startTime;
         private int _lastNumber;
         public static bool OnceBool { get; set; }
         public string LogMessage { get; set; }
         private List<string> memeList;
         private const string MOD_LOGS_CHANNEL = "mod_logs";
         private const string GENERAL_CHANNEL = "general";
-
+        private DateTime startTime;
 
         private readonly string _discordToken = Utilities.Token.GetToken("DiscordToken");
 
@@ -55,6 +55,8 @@ namespace PeaceBot
 
             RegisterCommands();
 
+            
+
             Discord.ExecuteAndWait(async () =>
             {
                 FixIfForceClosed();
@@ -68,7 +70,10 @@ namespace PeaceBot
                     Log("Could not connect to Discord API.\n:Error Message: " + ex.Message);
                     Console.WriteLine("Could not connect to Discord API.\n" + ex.Message);
                 }
+                Discord.SetGame("MrDestructoid", GameType.Twitch, "https://www.youtube.com/watch?v=7qnd-hdmgfk");
             });
+
+            
 
             Discord.UserJoined += async (s, e) =>
             {
@@ -146,17 +151,39 @@ namespace PeaceBot
             RegisterBabylonCommand();
             RegisterActivityCommand();
             RegisterAdminPanelCommand();
+            RegisterUptimeCommand();
             var memeFile = File.ReadAllLines("Log/meme.txt");
             memeList = new List<string>(memeFile);
         }
+
+
+        private void RegisterUptimeCommand()
+        {
+            Commands.CreateCommand("uptime")
+                .Description("Show bot uptime")
+                .Do(async (e) =>
+                {
+                    var newTime = (GetCurrentTime() - startTime).ToString();
+                    var timeString = newTime.Remove(newTime.Length - 8);
+                    await e.Channel.SendMessage("Current uptime: " + timeString);
+                });
+        }
+
+        private static DateTime GetCurrentTime()
+        {
+            return DateTime.Now;
+        }
+
 
         private void RegisterBabylonCommand()
         {
             Commands.CreateCommand("babylon")
                 .Description("BURN BABYLON")
                 .Do(async (e) =>
-            {
-                await e.Channel.SendMessage("<:CiGrip:257865220314234880> https://www.youtube.com/watch?v=6R4F9uTaXxk <:CiGrip:257865220314234880>");
+                {
+                    string[] babylon = {"https://www.youtube.com/watch?v=mYQHqLuWuig", "https://www.youtube.com/watch?v=Ry8_NdNKq-w", "https://www.youtube.com/watch?v=jr66A4NDuYw", "https://www.youtube.com/watch?v=qQvNPIizMEk", "https://www.youtube.com/watch?v=HV46OGU7ksE", "https://www.youtube.com/watch?v=yjg6flu3zuc" };
+                
+                await e.Channel.SendMessage("<:CiGrip:257865220314234880> "+ babylon[_rand.Next(0,babylon.Length)] +" <:CiGrip:257865220314234880>");
             });
         }
 
